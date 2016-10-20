@@ -18,7 +18,7 @@ def GetFileDir():
 		return None
 	return fdir
 
-def ReadLog(fp, tdm):
+def ReadFile(fp, tdm):
 	n = 0
 	with open(fp) as f:
 		for line in f:
@@ -67,7 +67,7 @@ def Parse(fdir):
 	for root, dirs, files in os.walk(fdir):
 		for fname in files:
 			fp = os.path.join(root, fname)
-			n += ReadLog(fp, tdm)
+			n += ReadFile(fp, tdm)
 	print "所有日志行数: %d"%n
 	
 	for i in xrange(3):

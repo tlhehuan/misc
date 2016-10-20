@@ -76,10 +76,10 @@ def GetSecondString(tm, prec = 0):
 
 def PrintLogin(rdm, sample):
 	if sample:
-		lst = random.sample(rdm.keys())
+		lst = random.sample(rdm.keys()
 	else:
-		lst = sorted(rdm.keys())
-	for rid in lst:
+		lst = rdm.keys()
+	for rid in sorted(lst):
 		_PrintLogin(rid, rdm[rid])
 
 def _PrintLogin(rid, vlst):

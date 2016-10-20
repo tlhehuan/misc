@@ -74,17 +74,13 @@ def GetSecondString(tm, prec = 0):
 			break
 	return s
 
-def PrintLogin(rdm, sample = False):
+def PrintLogin(rdm, sample):
 	if sample:
-		lst = rdm.keys()
-		n = len(lst)
-		for _ in xrange(20):
-			rid = lst[random.randint(0, n-1)]
-			_PrintLogin(rid, rdm[rid])
+		lst = random.sample(rdm.keys())
 	else:
-		rid_lst = sorted(rdm.keys())
-		for rid in rid_lst:
-			_PrintLogin(rid, rdm[rid])
+		lst = sorted(rdm.keys())
+	for rid in lst:
+		_PrintLogin(rid, rdm[rid])
 
 def _PrintLogin(rid, vlst):
 	print "-----------------------------------------"

@@ -29,6 +29,21 @@ def NewRoleLog(lst, stm, etm):
 			rid_set.add(dm["rid"])
 	return "新建角色日志行数: %d, 新角色ID数: %d"%(line_cnt, len(rid_set))
 
+def CheckLoginLogout(tdm):
+	rdm = {}
+	for dm in tdm[2]:
+		rdm.setdefault(dm["rid"], []).append((dm["tm"], 0))
+	for dm in tdm[3]:
+		rdm.setdefault(dm["rid"], []).append((dm["tm"], 1))
+	for rid, lst in rdm.iteritems():
+		lst.sort(key = lambda v : v[0])
+	for rid, vlst in rdm.items():
+		for idx in xrange(0, len(vlst)-1):
+			if vlst[idx][1] == vlst[idx + 1][1]:
+				print "登陆-登出异常", rid, vlst
+				break
+	return rdm
+
 def Parse():
 	lines = []
 	
@@ -49,19 +64,7 @@ def Parse():
 		print NewRoleLog(tdm[1], stm, etm)
 		print LoginLog(tdm[2], stm, etm)
 	
-	rdm = {}
-	for dm in tdm[2]:
-		rdm.setdefault(dm["rid"], []).append((dm["tm"], 0))
-	for dm in tdm[3]:
-		rdm.setdefault(dm["rid"], []).append((dm["tm"], 1))
-	for rid, lst in rdm.iteritems():
-		lst.sort(key = lambda v : v[0])
-	for rid, vlst in rdm.items():
-		for idx in xrange(0, len(vlst)-1):
-			if vlst[idx][1] == vlst[idx + 1][1]:
-				print "登陆-登出异常", rid, vlst
-				break
-	return rdm
+	return CheckLoginLogout(tdm)
 
 if __name__ == "__main__":
 	Parse()

@@ -4,19 +4,24 @@ import os.path
 import json
 import platform
 
-if platform.system() == "Linux":
-	LOG_DIR = "/home/game/logsrv/data/"
-else:
-	LOG_DIR = "E:\\SecureCRTDownload\\logsrv.data"
+STAT_BASETIME	= 1476633600	#2016-10-17 零点
 
-def ReadLog(path, tdm):
+def GetFileDir():
+	oper_sys = platform.system()
+	if oper_sys == "Linux":
+		return "/home/game/logsrv/data/"
+	elif oper_sys == "Windows":
+		return "E:\\SecureCRTDownload\\logsrv.data"
+	print "未知操作系统"
+
+def ReadLog(fp, tdm):
 	n = 0
-	with open(path) as f:
+	with open(fp) as f:
 		for line in f:
 			dm = json.loads(line[21:-1])
 			tdm.setdefault(dm["type"],[]).append(dm)
 			n += 1
-	print "读取到%d行日志 --From %s"%(n, path)
+	print "读取到%d行日志 --From %s"%(n, fp)
 	return n
 
 def LoginLog(lst, stm, etm):
@@ -52,23 +57,25 @@ def CheckLoginLogout(tdm):
 				break
 	return rdm
 
-def Parse():
+def Parse(fdir):
 	tdm = {}
 	n = 0
-	for parent, dirnames, filenames in os.walk(LOG_DIR):
-		for filename in filenames:
-			n += ReadLog(os.path.join(parent, filename), tdm)
+	for root, dirs, files in os.walk(fdir):
+		for fname in files:
+			fp = os.path.join(root, fname)
+			n += ReadLog(fp, tdm)
 	print "所有日志行数: %d"%n
 	
-	base_time = 1476633600	#2016-10-17 零点
 	for i in xrange(3):
 		print "====== %d日 ======"%(17 + i)
-		stm, etm = base_time + i * 86400, base_time + (i + 1) * 86400
+		stm, etm = STAT_BASETIME + i * 86400, STAT_BASETIME + (i + 1) * 86400
 		print NewRoleLog(tdm[1], stm, etm)
 		print LoginLog(tdm[2], stm, etm)
 	
 	ldm = CheckLoginLogout(tdm)
-	return ldm
+	return ldm	#便于人工登陆登出数据
 
 if __name__ == "__main__":
-	Parse()
+	fdir = GetFileDir()
+	if fdir != None:
+		Parse(fdir)

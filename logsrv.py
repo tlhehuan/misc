@@ -2,15 +2,22 @@
 import os
 import os.path
 import json
+import platform
 
-LOG_DIR = "E:\\SecureCRTDownload\\logsrv.data"
-#LOG_DIR = "/home/game/logsrv/data/"
+if platform.system() == "Linux":
+	LOG_DIR = "/home/game/logsrv/data/"
+else:
+	LOG_DIR = "E:\\SecureCRTDownload\\logsrv.data"
 
-def ReadLog(path, lines):
-	f = open(path)
-	lst = f.readlines()
-	lines.extend(lst)
-	print "读取到%d行日志 --From %s"%(len(lst), path)
+def ReadLog(path, tdm):
+	n = 0
+	with open(path) as f:
+		for line in f:
+			dm = json.loads(line[21:-1])
+			tdm.setdefault(dm["type"],[]).append(dm)
+			n += 1
+	print "读取到%d行日志 --From %s"%(n, path)
+	return n
 
 def LoginLog(lst, stm, etm):
 	line_cnt = 0
@@ -46,17 +53,12 @@ def CheckLoginLogout(tdm):
 	return rdm
 
 def Parse():
-	lines = []
-	
+	tdm = {}
+	n = 0
 	for parent, dirnames, filenames in os.walk(LOG_DIR):
 		for filename in filenames:
-			ReadLog(os.path.join(parent, filename), lines)
-	print "所有日志行数: %d"%len(lines)
-	
-	tdm = {}
-	for line in lines:
-	    dm = json.loads(line[21:-1])
-	    tdm.setdefault(dm["type"],[]).append(dm)
+			n += ReadLog(os.path.join(parent, filename), tdm)
+	print "所有日志行数: %d"%n
 	
 	base_time = 1476633600	#2016-10-17 零点
 	for i in xrange(3):

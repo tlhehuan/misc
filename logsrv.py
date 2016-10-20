@@ -6,13 +6,17 @@ import platform
 
 STAT_BASETIME	= 1476633600	#2016-10-17 零点
 
+FDIR = {
+	"Linux"		: "/home/game/logsrv/data/",
+	"Windows"	: "E:\\SecureCRTDownload\\logsrv.data",
+}
 def GetFileDir():
 	oper_sys = platform.system()
-	if oper_sys == "Linux":
-		return "/home/game/logsrv/data/"
-	elif oper_sys == "Windows":
-		return "E:\\SecureCRTDownload\\logsrv.data"
-	print "未知操作系统"
+	fdir = FDIR.get(oper_sys)
+	if fdir == None:
+		print "未知操作系统"
+		return None
+	return fdir
 
 def ReadLog(fp, tdm):
 	n = 0

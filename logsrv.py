@@ -25,6 +25,8 @@ def ReadFile(fp, tdm):
 	with open(fp) as f:
 		for line in f:
 			dm = json.loads(line[21:-1])
+			seq = line[:20]
+			dm["log_seq"] = seq
 			tdm.setdefault(dm["type"],[]).append(dm)
 			n += 1
 	print "读取到%d行日志 --From %s"%(n, fp)
@@ -51,11 +53,11 @@ def NewRoleLog(lst, stm, etm):
 def GetLiveTimeData(tdm):
 	rdm = {}
 	for dm in tdm[2]:
-		rdm.setdefault(dm["rid"], []).append((dm["tm"], 0))
+		rdm.setdefault(dm["rid"], []).append((dm["tm"], 0, dm["log_seq"]))
 	for dm in tdm[3]:
-		rdm.setdefault(dm["rid"], []).append((dm["tm"], 1))
+		rdm.setdefault(dm["rid"], []).append((dm["tm"], 1, dm["log_seq"]))
 	for rid, lst in rdm.iteritems():
-		lst.sort(key = lambda v : v[0])
+		lst.sort(key = lambda v : v[2])
 	return rdm
 
 def GetSecondString(tm, prec = 0):
@@ -91,24 +93,25 @@ def _PrintLogin(rid, vlst):
 		for i in xrange(len(vlst)/2):
 			s = ""
 			tmpv = vlst[i*2:(i+1)*2]
-			for tm, flag in tmpv:
+			for tm, flag, _ in tmpv:
 				s += "%d, %s, %s\t\t" %(rid, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(tm)), ["登陆 -->", "登出 <--"][flag])
 			if len(tmpv) == 2:
 				IN, OUT = tmpv
 				if IN[1] == 0 and OUT[1] == 1:
 					livetm = OUT[0] - IN[0]
+					s += "%d, 第%03d次游戏: 登出时间 - 登陆时间 = %d; "%(rid, i + 1, livetm)
 					if livetm >= 1200:
 						vtm = livetm - 1200
-						s += "%d, 第%03d次游戏: 登出时间 - 登陆时间 = %d; -1200, 有效时长: %s(%d)"%(rid, i, livetm, GetSecondString(vtm), vtm)
+						s += "-1200, 有效时长: %s(%d)"%(GetSecondString(vtm), vtm)
 						ttm += vtm
 					else:
-						s += "%d, 时间错误, %d, %s, %s"%(rid, livetm, IN, OUT)
+						s += "时间错误, 小于1200"
 				else:
-					s += "%d, 配对错误, %s, %s"%(rid, IN, OUT)
+					s += "%d, 第%03d次游戏: 配对错误, %s, %s"%(rid, i + 1, IN, OUT)
 			print s
 		print rid, "总在线时长: %s(%d)"%(GetSecondString(ttm), ttm)
 	else:
-		print rid, "数据不完整", vlst
+		print rid, "数据不完整，需要补全才能统计", vlst
 
 def Parse(fdir):
 	tdm = {}

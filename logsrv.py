@@ -56,7 +56,7 @@ def GetLiveTimeData(tdm):
 	for dm in tdm[3]:
 		rdm.setdefault(dm["rid"], []).append((dm["tm"] - protect, 1, dm["log_seq"]))
 	for rid, lst in rdm.iteritems():
-		lst.sort(key = lambda v : v[2])
+		lst.sort(key = lambda v : v[2])		#根据seq排序（整数时间戳的精度不够）
 	return rdm
 
 def GetSecondString(tm, prec = 0):

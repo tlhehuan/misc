@@ -3,6 +3,8 @@ import os
 import os.path
 import json
 import platform
+import time
+import random
 
 STAT_BASETIME	= 1476633600	#2016-10-17 零点
 
@@ -56,10 +58,61 @@ def CheckLoginLogout(tdm):
 		lst.sort(key = lambda v : v[0])
 	for rid, vlst in rdm.items():
 		for idx in xrange(0, len(vlst)-1):
+			if vlst[idx + 1][0] - vlst[idx][0] < 1200:
+				print "登陆-登出不足20分钟", rid, vlst[idx + 1][0], vlst[idx][0]
+				break
 			if vlst[idx][1] == vlst[idx + 1][1]:
-				print "登陆-登出异常", rid, vlst
+				print "登陆-登出不配对", rid, vlst
 				break
 	return rdm
+
+def GetSecondString(tm, prec = 0):
+	_tms = [("秒", 60), ("分钟", 60), ("小时", 24), ("天", 9999)]
+	s = ""
+	for i, t in enumerate(_tms):
+		if i >= prec or tm < t[1]:
+			v = tm % t[1]
+			if v > 0:
+				s = "%d%s"%(v, t[0]) + s
+		tm /= t[1]
+		if tm == 0:
+			break
+	return s
+
+def PrintLogin(rdm, rand):
+	if rand:
+		lst = rdm.keys()
+		n = len(lst)
+		for _ in xrange(20):
+			rid = lst[random.randint(0, n-1)]
+			vlst = rdm[rid]
+			_PrintLogin(rid, vlst)
+	else:
+		for rid, vlst in rdm.iteritems():
+			_PrintLogin(rid, vlst)
+
+def _PrintLogin(rid, vlst):
+		print "-----------------------------------------"
+		ttm = 0
+		for i in xrange(len(vlst)/2):
+			s = ""
+			tmpv = vlst[i*2:(i+1)*2]
+			for tm, flag in tmpv:
+				s += "%d, %s, %s\t\t" %(rid, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(tm)), ["登陆 -->", "登出 <--"][flag])
+			if len(tmpv) == 2:
+				IN, OUT = tmpv
+				if IN[1] == 0 and OUT[1] == 1:
+					livetm = OUT[0] - IN[0]
+					if livetm > 1200:
+						vtm = livetm - 1200
+						s += "%d, 第%03d次游戏: 登出时间 - 登陆时间 = %d; -1200, 有效时长: %s(%d)"%(rid, i, livetm, GetSecondString(vtm), vtm)
+						ttm += vtm
+					else:
+						s += "%d, 错误数据, %s, %s"%(rid, IN, OUT)
+				else:
+					s += "%d, 配对错误, %s, %s"%(rid, IN, OUT)
+			print s
+		print rid, "总在线时长: %s(%d)"%(GetSecondString(ttm), ttm)
 
 def Parse(fdir):
 	tdm = {}
@@ -76,8 +129,9 @@ def Parse(fdir):
 		print NewRoleLog(tdm[1], stm, etm)
 		print LoginLog(tdm[2], stm, etm)
 	
-	ldm = CheckLoginLogout(tdm)
-	return ldm	#便于人工登陆登出数据
+	rdm = CheckLoginLogout(tdm)
+	PrintLogin(rdm, False)
+	return rdm	#便于人工登陆登出数据
 
 if __name__ == "__main__":
 	fdir = GetFileDir()

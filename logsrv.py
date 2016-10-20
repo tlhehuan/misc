@@ -6,8 +6,6 @@ import platform
 import time
 import random
 
-STAT_BASETIME	= 1476633600	#2016-10-17 零点
-
 FDIR = {
 	"Linux"		: "/home/game/logsrv/data/",
 	"Windows"	: "E:\\SecureCRTDownload\\logsrv.data",
@@ -76,7 +74,7 @@ def GetSecondString(tm, prec = 0):
 
 def PrintLogin(rdm, sample):
 	if sample:
-		lst = random.sample(rdm.keys()
+		lst = random.sample(rdm.keys())
 	else:
 		lst = rdm.keys()
 	for rid in sorted(lst):
@@ -127,14 +125,10 @@ def GetDayEnd(tm):
 
 def UpdateLiveMap(stm, etm, dm):
 	for _ in xrange(100):
-		zero_tm = GetDay(stm)
-		if IsSameDay(stm, etm):
-			dm[zero_tm] = dm.get(zero_tm, 0) + (etm - stm)
+		if stm >= etm:
 			break
-		else:
-			tmp_etm = GetDayEnd(stm)
-			dm[zero_tm] = dm.get(zero_tm, 0) + (tmp_etm - stm)
-			stm = tmp_etm
+		dm[GetDay(stm)] = dm.get(GetDay(stm), 0) + (min(etm, GetDayEnd(stm)) - stm)
+		stm = GetDayEnd(stm)
 	return dm
 
 def Parse(fdir):
@@ -146,11 +140,15 @@ def Parse(fdir):
 			n += ReadFile(fp, tdm)
 	print "所有日志行数: %d"%n
 	
-	for i in xrange(3):
-		print "====== %d日 ======"%(17 + i)
-		stm, etm = STAT_BASETIME + i * 86400, STAT_BASETIME + (i + 1) * 86400
-		print NewRoleLog(tdm[1], stm, etm)
-		print LoginLog(tdm[2], stm, etm)
+	stm = min(dm["tm"] for lst in tdm.values() for dm in lst)
+	etm = max(dm["tm"] for lst in tdm.values() for dm in lst)
+	for _ in xrange(100):
+		if stm >= etm:
+			break
+		date = time.strftime("%Y-%m-%d", time.localtime(stm))
+		print date, NewRoleLog(tdm[1], GetDay(stm), GetDayEnd(stm))
+		print date, LoginLog(tdm[2], GetDay(stm), GetDayEnd(stm))
+		stm = GetDayEnd(stm)
 	
 	rdm = GetLiveTimeData(tdm)
 	PrintLogin(rdm, False)

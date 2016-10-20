@@ -48,7 +48,7 @@ def NewRoleLog(lst, stm, etm):
 			rid_set.add(dm["rid"])
 	return "新建角色日志行数: %d, 新角色ID数: %d"%(line_cnt, len(rid_set))
 
-def CheckLoginLogout(tdm):
+def GetLiveTimeData(tdm):
 	rdm = {}
 	for dm in tdm[2]:
 		rdm.setdefault(dm["rid"], []).append((dm["tm"], 0))
@@ -56,14 +56,6 @@ def CheckLoginLogout(tdm):
 		rdm.setdefault(dm["rid"], []).append((dm["tm"], 1))
 	for rid, lst in rdm.iteritems():
 		lst.sort(key = lambda v : v[0])
-	for rid, vlst in rdm.items():
-		for idx in xrange(0, len(vlst)-1):
-			if vlst[idx + 1][0] - vlst[idx][0] < 1200:
-				print "登陆-登出不足20分钟", rid, vlst[idx + 1][0], vlst[idx][0]
-				break
-			if vlst[idx][1] == vlst[idx + 1][1]:
-				print "登陆-登出不配对", rid, vlst
-				break
 	return rdm
 
 def GetSecondString(tm, prec = 0):
@@ -92,7 +84,9 @@ def PrintLogin(rdm, rand):
 			_PrintLogin(rid, vlst)
 
 def _PrintLogin(rid, vlst):
-		print "-----------------------------------------"
+	print "-----------------------------------------"
+	n = len(vlst) / 2
+	if n > 0:
 		ttm = 0
 		for i in xrange(len(vlst)/2):
 			s = ""
@@ -108,11 +102,13 @@ def _PrintLogin(rid, vlst):
 						s += "%d, 第%03d次游戏: 登出时间 - 登陆时间 = %d; -1200, 有效时长: %s(%d)"%(rid, i, livetm, GetSecondString(vtm), vtm)
 						ttm += vtm
 					else:
-						s += "%d, 错误数据, %s, %s"%(rid, IN, OUT)
+						s += "%d, 时间错误, %d, %s, %s"%(rid, livetm, IN, OUT)
 				else:
 					s += "%d, 配对错误, %s, %s"%(rid, IN, OUT)
 			print s
 		print rid, "总在线时长: %s(%d)"%(GetSecondString(ttm), ttm)
+	else:
+		print rid, "数据不完整", vlst
 
 def Parse(fdir):
 	tdm = {}
@@ -129,7 +125,7 @@ def Parse(fdir):
 		print NewRoleLog(tdm[1], stm, etm)
 		print LoginLog(tdm[2], stm, etm)
 	
-	rdm = CheckLoginLogout(tdm)
+	rdm = GetLiveTimeData(tdm)
 	PrintLogin(rdm, False)
 	return rdm	#便于人工登陆登出数据
 

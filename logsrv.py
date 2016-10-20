@@ -51,11 +51,12 @@ def NewRoleLog(lst, stm, etm):
 	return "新建角色日志行数: %d, 新角色ID数: %d"%(line_cnt, len(rid_set))
 
 def GetLiveTimeData(tdm):
+	protect = 19 * 60
 	rdm = {}
 	for dm in tdm[2]:
-		rdm.setdefault(dm["rid"], []).append((dm["tm"], 0, dm["log_seq"]))
+		rdm.setdefault(dm["rid"], []).append((dm["tm"] - protect, 0, dm["log_seq"]))
 	for dm in tdm[3]:
-		rdm.setdefault(dm["rid"], []).append((dm["tm"], 1, dm["log_seq"]))
+		rdm.setdefault(dm["rid"], []).append((dm["tm"] - protect, 1, dm["log_seq"]))
 	for rid, lst in rdm.iteritems():
 		lst.sort(key = lambda v : v[2])
 	return rdm
@@ -73,22 +74,23 @@ def GetSecondString(tm, prec = 0):
 			break
 	return s
 
-def PrintLogin(rdm, rand):
-	if rand:
+def PrintLogin(rdm, sample = False):
+	if sample:
 		lst = rdm.keys()
 		n = len(lst)
 		for _ in xrange(20):
 			rid = lst[random.randint(0, n-1)]
-			vlst = rdm[rid]
-			_PrintLogin(rid, vlst)
+			_PrintLogin(rid, rdm[rid])
 	else:
-		for rid, vlst in rdm.iteritems():
-			_PrintLogin(rid, vlst)
+		rid_lst = sorted(rdm.keys())
+		for rid in rid_lst:
+			_PrintLogin(rid, rdm[rid])
 
 def _PrintLogin(rid, vlst):
 	print "-----------------------------------------"
 	n = len(vlst) / 2
 	if n > 0:
+		dm = {}
 		ttm = 0
 		for i in xrange(len(vlst)/2):
 			s = ""
@@ -98,20 +100,46 @@ def _PrintLogin(rid, vlst):
 			if len(tmpv) == 2:
 				IN, OUT = tmpv
 				if IN[1] == 0 and OUT[1] == 1:
-					livetm = OUT[0] - IN[0]
-					s += "%d, 第%03d次游戏: 登出时间 - 登陆时间 = %d; "%(rid, i + 1, livetm)
-					if livetm >= 1200:
-						vtm = livetm - 1200
-						s += "-1200, 有效时长: %s(%d)"%(GetSecondString(vtm), vtm)
-						ttm += vtm
+					stm, etm = IN[0], OUT[0]
+					livetm = etm - stm
+					s += "%d, 第%03d次游戏: 登出时间 - (登陆时间-19分钟) = %d"%(rid, i + 1, livetm)
+					if livetm > 0:
+						s += "(%s)"%GetSecondString(livetm)
+						ttm += livetm
+						UpdateLiveMap(stm, etm, dm)
 					else:
-						s += "时间错误, 小于1200"
+						s += "时间错误, <= 0"
 				else:
 					s += "%d, 第%03d次游戏: 配对错误, %s, %s"%(rid, i + 1, IN, OUT)
 			print s
 		print rid, "总在线时长: %s(%d)"%(GetSecondString(ttm), ttm)
+		for ntm in sorted(dm.keys()):
+			print "%d 日在线(%s): %s(%d)"%(rid, time.strftime("%Y-%m-%d", time.localtime(ntm)), GetSecondString(dm[ntm]), dm[ntm])
 	else:
 		print rid, "数据不完整，需要补全才能统计", vlst
+
+def IsSameDay(tm, now):
+	tm -= (tm - time.timezone)%86400		#调整为当日0时
+	now -= (now - time.timezone)%86400		#调整为当日0时
+	return tm == now
+
+def GetDay(tm):
+	return tm - (tm - time.timezone)%86400
+
+def GetDayEnd(tm):
+	return tm - (tm - time.timezone)%86400 + 86400
+
+def UpdateLiveMap(stm, etm, dm):
+	for _ in xrange(100):
+		zero_tm = GetDay(stm)
+		if IsSameDay(stm, etm):
+			dm[zero_tm] = dm.get(zero_tm, 0) + (etm - stm)
+			break
+		else:
+			tmp_etm = GetDayEnd(stm)
+			dm[zero_tm] = dm.get(zero_tm, 0) + (tmp_etm - stm)
+			stm = tmp_etm
+	return dm
 
 def Parse(fdir):
 	tdm = {}

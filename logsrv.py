@@ -1,6 +1,7 @@
 # -*- coding: gbk -*-
 import os
 import os.path
+import json
 
 LOG_DIR = "E:\\SecureCRTDownload\\logsrv.data"
 #LOG_DIR = "/home/game/logsrv/data/"
@@ -54,7 +55,7 @@ def Parse():
 	
 	tdm = {}
 	for line in lines:
-	    dm = eval(line[21:-1])
+	    dm = json.loads(line[21:-1])
 	    tdm.setdefault(dm["type"],[]).append(dm)
 	
 	base_time = 1476633600	#2016-10-17 零点

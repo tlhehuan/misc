@@ -64,7 +64,8 @@ def Parse():
 		print NewRoleLog(tdm[1], stm, etm)
 		print LoginLog(tdm[2], stm, etm)
 	
-	return CheckLoginLogout(tdm)
+	ldm = CheckLoginLogout(tdm)
+	return ldm
 
 if __name__ == "__main__":
 	Parse()

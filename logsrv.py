@@ -97,7 +97,7 @@ def _PrintLogin(rid, vlst):
 				IN, OUT = tmpv
 				if IN[1] == 0 and OUT[1] == 1:
 					livetm = OUT[0] - IN[0]
-					if livetm > 1200:
+					if livetm >= 1200:
 						vtm = livetm - 1200
 						s += "%d, 第%03d次游戏: 登出时间 - 登陆时间 = %d; -1200, 有效时长: %s(%d)"%(rid, i, livetm, GetSecondString(vtm), vtm)
 						ttm += vtm

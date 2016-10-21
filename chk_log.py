@@ -61,7 +61,7 @@ def NewRoleLog(lst, stm, etm):
 def GetLiveData(tdm):
 	rdm = {}
 	for dm in tdm[TYPE_LOGIN]:
-		rdm.setdefault(dm["rid"], []).append((dm["tm"] - OFFLINE_PROTECT, 0, dm["log_seq"]))
+		rdm.setdefault(dm["rid"], []).append((dm["tm"], 0, dm["log_seq"]))
 	for dm in tdm[TYPE_LOGOUT]:
 		rdm.setdefault(dm["rid"], []).append((dm["tm"] - OFFLINE_PROTECT, 1, dm["log_seq"]))
 	for rid, lst in rdm.iteritems():
@@ -88,14 +88,14 @@ def DoPrintLiveTime(rid, vlst):
 		
 		stm, slt, _ = vlst[i * 2]
 		etm, elt, _ = vlst[i * 2 + 1]
-		if stm >= etm:
-			s += "在线时长不足离线保护时间，忽略不计"
-			print s
-			continue
 		assert slt == 0 and elt == 1
 		
 		stms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stm))
 		etms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(etm))
+		if stm >= etm:
+			s += "在线时长不足离线保护时间，忽略不计(离线时间 %s)"% etms
+			print s
+			continue
 		s += "%s --> %s, "%(stms, etms)
 		
 		livetm = etm - stm
@@ -165,16 +165,14 @@ def Check_Main(fdir):
 ###########################################################
 #工具函数
 ###########################################################
-def GetToday(tm):
+def GetToday(tm):	#当日0点
 	return tm - (tm - time.timezone) % 86400
 
-def GetNextDay(tm):
+def GetNextDay(tm):	#次日0点
 	return tm - (tm - time.timezone) % 86400 + 86400
 
 def IsSameDay(x, y):
-	x -= (x - time.timezone) % 86400		#调整为当日0时
-	y -= (y - time.timezone) % 86400		#调整为当日0时
-	return x == y
+	return GetToday(x) == GetToday(y)
 
 def FormatTimeLength(tm):
 	FMT = [("秒", 60), ("分钟", 60), ("小时", 24), ("天", 9999)]

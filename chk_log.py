@@ -12,7 +12,7 @@ TYPE_NEW_ROLE		= 0x01
 TYPE_LOGIN		= 0x02
 TYPE_LOGOUT		= 0x03
 
-MAX_LOOP_DAY		= 100
+MAX_LOOP_DAY		= 100		#最大计算天数
 OFFLINE_PROTECT		= 19 * 60	#离线保护时间
 
 def GetFileDir():
@@ -87,17 +87,16 @@ def DoPrintLiveTime(rid, vlst):
 		s = "%d 第%03d次游戏: "%(rid, i + 1)
 		
 		(stm, slt, _), (etm, elt, _) = vlst[i*2:(i+1)*2]
-		assert slt == 0 and elt == 1
+		assert slt == 0 and elt == 1 and stm < etm
 		
 		stms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stm))
 		etms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(etm))
 		s += "%s --> %s, " %(stms, etms)
 		
 		livetm = etm - stm
-		assert stm < etm
+		total += livetm
 		s += "登出时间 - 登陆时间 = %d(%s)"%(livetm, GetSecondString(livetm))
 		
-		total += livetm
 		AddLiveMap(stm, etm, dlm)
 		print s
 	
@@ -123,8 +122,10 @@ def AddLiveMap(stm, etm, dlm):
 		raise "总天数太长"
 	return dlm
 
-def Parse(fdir):
-	tdm = {}
+def Check_Main(fdir):
+	tdm = {}	#日志数据
+	
+	#读取
 	n = 0
 	for root, dirs, files in os.walk(fdir):
 		for fname in sorted(files):
@@ -132,6 +133,7 @@ def Parse(fdir):
 			n += ReadFile(fp, tdm)
 	print "所有日志行数: %d"%n
 	
+	#计算每天的新角色数量、登陆数量
 	stm = min(dm["tm"] for lst in tdm.values() for dm in lst)
 	etm = max(dm["tm"] for lst in tdm.values() for dm in lst)
 	for _ in xrange(MAX_LOOP_DAY):
@@ -144,9 +146,11 @@ def Parse(fdir):
 	else:
 		raise "总天数太长"
 	
+	#计算在线时间
 	rdm = GetLiveTimeData(tdm)
 	PrintLiveTime(rdm, False)
-	return rdm	#便于人工登陆登出数据
+	return rdm
+
 
 ###########################################################
 #工具函数
@@ -178,4 +182,4 @@ def GetDayEnd(tm):
 if __name__ == "__main__":
 	fdir = GetFileDir()
 	if fdir != None:
-		Parse(fdir)
+		Check_Main(fdir)

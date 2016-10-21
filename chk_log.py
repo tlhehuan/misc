@@ -58,7 +58,7 @@ def NewRoleLog(lst, stm, etm):
 			rid_set.add(dm["rid"])
 	return "新建角色日志行数: %d, 新角色ID数: %d"%(n, len(rid_set))
 
-def GetLiveTimeData(tdm):
+def GetLiveData(tdm):
 	rdm = {}
 	for dm in tdm[TYPE_LOGIN]:
 		rdm.setdefault(dm["rid"], []).append((dm["tm"] - OFFLINE_PROTECT, 0, dm["log_seq"]))
@@ -102,15 +102,16 @@ def DoPrintLiveTime(rid, vlst):
 	
 	if rem > 0:
 		stm, slt, _ = vlst[-1]
-		s = "%d, 第%03d次游戏: "%(rid, n + 1)
+		s = "%d 第%03d次游戏: "%(rid, n + 1)
 		stms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stm))
 		s += "%s --> (尚未登出)" %stms
 		print s
 	
-	if total > 0:
-		print rid, "总在线时长: %d(%s)"%(total, GetSecondString(total))
 	for ntm in sorted(dlm.keys()):
-		print "%d 日在线(%s): %s(%d)"%(rid, time.strftime("%Y-%m-%d", time.localtime(ntm)), GetSecondString(dlm[ntm]), dlm[ntm])
+		date = time.strftime("%Y-%m-%d", time.localtime(ntm))
+		print "%d 日在线(%s): %d(%s)"%(rid, date, dlm[ntm], GetSecondString(dlm[ntm]))
+	if total > 0:
+		print "%d 总在线时长: %d(%s)"%(rid, total, GetSecondString(total))
 
 def AddLiveMap(stm, etm, dlm):
 	for _ in xrange(MAX_LOOP_DAY):
@@ -147,7 +148,7 @@ def Check_Main(fdir):
 		raise "总天数太长"
 	
 	#计算在线时间
-	rdm = GetLiveTimeData(tdm)
+	rdm = GetLiveData(tdm)
 	PrintLiveTime(rdm, False)
 	return rdm
 

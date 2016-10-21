@@ -86,41 +86,45 @@ def DoPrintLiveTime(rid, vlst):
 	for i in xrange(n):
 		s = "%d 第%03d次游戏: "%(rid, i + 1)
 		
-		(stm, slt, _), (etm, elt, _) = vlst[i*2:(i+1)*2]
-		assert slt == 0 and elt == 1 and stm < etm
+		stm, slt, _ = vlst[i * 2]
+		etm, elt, _ = vlst[i * 2 + 1]
+		assert stm < etm and slt == 0 and elt == 1
 		
 		stms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stm))
 		etms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(etm))
-		s += "%s --> %s, " %(stms, etms)
+		s += "%s --> %s, "%(stms, etms)
 		
 		livetm = etm - stm
-		total += livetm
-		s += "登出时间 - 登陆时间 = %d(%s)"%(livetm, GetSecondString(livetm))
+		s += "登出时间 - 登陆时间 = %d(%s)"%(livetm, FormatTimeLength(livetm))
 		
 		AddLiveMap(stm, etm, dlm)
+		total += livetm
 		print s
 	
 	if rem > 0:
 		stm, slt, _ = vlst[-1]
 		s = "%d 第%03d次游戏: "%(rid, n + 1)
 		stms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stm))
-		s += "%s --> (尚未登出)" %stms
+		s += "%s --> (尚未登出)"%stms
 		print s
 	
 	for ntm in sorted(dlm.keys()):
 		date = time.strftime("%Y-%m-%d", time.localtime(ntm))
-		print "%d 日在线(%s): %d(%s)"%(rid, date, dlm[ntm], GetSecondString(dlm[ntm]))
+		print "%d 日在线(%s): %d(%s)"%(rid, date, dlm[ntm], FormatTimeLength(dlm[ntm]))
+	
 	if total > 0:
-		print "%d 总在线时长: %d(%s)"%(rid, total, GetSecondString(total))
+		print "%d 总在线时长: %d(%s)"%(rid, total, FormatTimeLength(total))
 
 def AddLiveMap(stm, etm, dlm):
 	for _ in xrange(MAX_LOOP_DAY):
 		if stm >= etm:
 			break
+		
 		dlm[GetDay(stm)] = dlm.get(GetDay(stm), 0) + (min(etm, GetDayEnd(stm)) - stm)
 		stm = GetDayEnd(stm)
 	else:
 		raise "总天数太长"
+	
 	return dlm
 
 def Check_Main(fdir):
@@ -140,6 +144,7 @@ def Check_Main(fdir):
 	for _ in xrange(MAX_LOOP_DAY):
 		if stm >= etm:
 			break
+		
 		date = time.strftime("%Y-%m-%d", time.localtime(stm))
 		print date, NewRoleLog(tdm[TYPE_NEW_ROLE], GetDay(stm), GetDayEnd(stm))
 		print date, LoginLog(tdm[TYPE_LOGIN], GetDay(stm), GetDayEnd(stm))
@@ -156,11 +161,11 @@ def Check_Main(fdir):
 ###########################################################
 #工具函数
 ###########################################################
-def GetSecondString(tm, prec = 0):
-	_tms = [("秒", 60), ("分钟", 60), ("小时", 24), ("天", 9999)]
+def FormatTimeLength(tm):
+	FMT = [("秒", 60), ("分钟", 60), ("小时", 24), ("天", 9999)]
 	s = ""
-	for i, (u, n) in enumerate(_tms):
-		if tm < n or i >= prec:
+	for i, (u, n) in enumerate(FMT):
+		if tm < n:
 			v = tm % n
 			if v > 0:
 				s = "%d%s"%(v, u) + s

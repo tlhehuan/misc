@@ -142,11 +142,6 @@ def Parse(fdir):
 	PrintLiveTime(rdm, False)
 	return rdm	#便于人工登陆登出数据
 
-if __name__ == "__main__":
-	fdir = GetFileDir()
-	if fdir != None:
-		Parse(fdir)
-
 ###########################################################
 #工具函数
 ###########################################################
@@ -173,3 +168,8 @@ def GetDay(tm):
 
 def GetDayEnd(tm):
 	return tm - (tm - time.timezone) % 86400 + 86400
+
+if __name__ == "__main__":
+	fdir = GetFileDir()
+	if fdir != None:
+		Parse(fdir)

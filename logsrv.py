@@ -6,6 +6,12 @@ import platform
 import time
 import random
 
+#日志类型定义，参考protocol_logsrv.py
+TYPE_NEW_ROLE		= 0x01
+TYPE_LOGIN		= 0x02
+TYPE_LOGOUT		= 0x03
+
+
 OFFLINE_PROTECT		= 19 * 60	#离线保护时间
 
 FDIR = {
@@ -52,9 +58,9 @@ def NewRoleLog(lst, stm, etm):
 
 def GetLiveTimeData(tdm):
 	rdm = {}
-	for dm in tdm[2]:
+	for dm in tdm[TYPE_LOGIN]:
 		rdm.setdefault(dm["rid"], []).append((dm["tm"] - OFFLINE_PROTECT, 0, dm["log_seq"]))
-	for dm in tdm[3]:
+	for dm in tdm[TYPE_LOGOUT]:
 		rdm.setdefault(dm["rid"], []).append((dm["tm"] - OFFLINE_PROTECT, 1, dm["log_seq"]))
 	for rid, lst in rdm.iteritems():
 		lst.sort(key = lambda v : v[2])		#根据seq排序（整数时间戳的精度不够）
@@ -147,8 +153,8 @@ def Parse(fdir):
 		if stm >= etm:
 			break
 		date = time.strftime("%Y-%m-%d", time.localtime(stm))
-		print date, NewRoleLog(tdm[1], GetDay(stm), GetDayEnd(stm))
-		print date, LoginLog(tdm[2], GetDay(stm), GetDayEnd(stm))
+		print date, NewRoleLog(tdm[TYPE_NEW_ROLE], GetDay(stm), GetDayEnd(stm))
+		print date, LoginLog(tdm[TYPE_LOGIN], GetDay(stm), GetDayEnd(stm))
 		stm = GetDayEnd(stm)
 	
 	rdm = GetLiveTimeData(tdm)

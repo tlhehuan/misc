@@ -1,4 +1,5 @@
 # -*- coding: gbk -*-
+
 import os
 import os.path
 import json
@@ -19,6 +20,7 @@ def GetFileDir():
 		"Linux"		: "/home/game/logsrv/data/",
 		"Windows"	: "E:/SecureCRTDownload/logsrv/data/",
 	}
+	
 	oper_sys = platform.system()
 	fdir = FDIR.get(oper_sys)
 	if fdir == None:
@@ -39,22 +41,22 @@ def ReadFile(fp, tdm):
 	return n
 
 def LoginLog(lst, stm, etm):
-	line_cnt = 0
+	n = 0
 	rid_set = set()
 	for dm in lst:
 		if stm <= dm["tm"] < etm:
-			line_cnt += 1
+			n += 1
 			rid_set.add(dm["rid"])
-	return "登陆日志行数: %d, 登陆ID数: %d"%(line_cnt, len(rid_set))
+	return "登陆日志行数: %d, 登陆ID数: %d"%(n, len(rid_set))
 
 def NewRoleLog(lst, stm, etm):
-	line_cnt = 0
+	n = 0
 	rid_set = set()
 	for dm in lst:
 		if stm <= dm["tm"] < etm:
-			line_cnt += 1
+			n += 1
 			rid_set.add(dm["rid"])
-	return "新建角色日志行数: %d, 新角色ID数: %d"%(line_cnt, len(rid_set))
+	return "新建角色日志行数: %d, 新角色ID数: %d"%(n, len(rid_set))
 
 def GetLiveTimeData(tdm):
 	rdm = {}
@@ -76,46 +78,50 @@ def PrintLiveTime(rdm, sample):
 		DoPrintLiveTime(rid, rdm[rid])
 
 def DoPrintLiveTime(rid, vlst):
+	dlm = {}	#日在线时长
+	total = 0	#总在线时长
+	
 	print "-----------------------------------------"
-	n = len(vlst) / 2
-	if n > 0:
-		dm = {}
-		ttm = 0
-		for i in xrange(len(vlst)/2):
-			s = ""
-			tmpv = vlst[i*2:(i+1)*2]
-			for tm, flag, _ in tmpv:
-				s += "%d, %s, %s\t\t" %(rid, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(tm)), ["登陆 -->", "登出 <--"][flag])
-			if len(tmpv) == 2:
-				IN, OUT = tmpv
-				if IN[1] == 0 and OUT[1] == 1:
-					stm, etm = IN[0], OUT[0]
-					livetm = etm - stm
-					s += "%d, 第%03d次游戏: 登出时间 - 登陆时间( - %s) = %d"%(rid, i + 1, GetSecondString(OFFLINE_PROTECT), livetm)
-					if livetm > 0:
-						s += "(%s)"%GetSecondString(livetm)
-						ttm += livetm
-						UpdateLiveMap(stm, etm, dm)
-					else:
-						s += "时间错误, <= 0"
-				else:
-					s += "%d, 第%03d次游戏: 配对错误, %s, %s"%(rid, i + 1, IN, OUT)
-			print s
-		print rid, "总在线时长: %s(%d)"%(GetSecondString(ttm), ttm)
-		for ntm in sorted(dm.keys()):
-			print "%d 日在线(%s): %s(%d)"%(rid, time.strftime("%Y-%m-%d", time.localtime(ntm)), GetSecondString(dm[ntm]), dm[ntm])
-	else:
-		print rid, "数据不完整，需要补全才能统计", vlst
+	n, rem = divmod(len(vlst), 2)
+	for i in xrange(n):
+		s = "%d 第%03d次游戏: "%(rid, i + 1)
+		
+		(stm, slt, _), (etm, elt, _) = vlst[i*2:(i+1)*2]
+		assert slt == 0 and elt == 1
+		
+		stms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stm))
+		etms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(etm))
+		s += "%s --> %s, " %(stms, etms)
+		
+		livetm = etm - stm
+		assert stm < etm
+		s += "登出时间 - 登陆时间 = %d(%s)"%(livetm, GetSecondString(livetm))
+		
+		total += livetm
+		AddLiveMap(stm, etm, dlm)
+		print s
+	
+	if rem > 0:
+		stm, slt, _ = vlst[-1]
+		s = "%d, 第%03d次游戏: "%(rid, n + 1)
+		stms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stm))
+		s += "%s --> (尚未登出)" %stms
+		print s
+	
+	if total > 0:
+		print rid, "总在线时长: %d(%s)"%(total, GetSecondString(total))
+	for ntm in sorted(dlm.keys()):
+		print "%d 日在线(%s): %s(%d)"%(rid, time.strftime("%Y-%m-%d", time.localtime(ntm)), GetSecondString(dlm[ntm]), dlm[ntm])
 
-def UpdateLiveMap(stm, etm, dm):
+def AddLiveMap(stm, etm, dlm):
 	for _ in xrange(MAX_LOOP_DAY):
 		if stm >= etm:
 			break
-		dm[GetDay(stm)] = dm.get(GetDay(stm), 0) + (min(etm, GetDayEnd(stm)) - stm)
+		dlm[GetDay(stm)] = dlm.get(GetDay(stm), 0) + (min(etm, GetDayEnd(stm)) - stm)
 		stm = GetDayEnd(stm)
 	else:
 		raise "总天数太长"
-	return dm
+	return dlm
 
 def Parse(fdir):
 	tdm = {}

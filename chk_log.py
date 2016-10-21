@@ -165,10 +165,9 @@ def FormatTimeLength(tm):
 	FMT = [("秒", 60), ("分钟", 60), ("小时", 24), ("天", 9999)]
 	s = ""
 	for i, (u, n) in enumerate(FMT):
-		if tm < n:
-			v = tm % n
-			if v > 0:
-				s = "%d%s"%(v, u) + s
+		v = tm % n
+		if v > 0:
+			s = "%d%s"%(v, u) + s
 		tm /= n
 		if tm == 0:
 			break

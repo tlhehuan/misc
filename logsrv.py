@@ -11,15 +11,14 @@ TYPE_NEW_ROLE		= 0x01
 TYPE_LOGIN		= 0x02
 TYPE_LOGOUT		= 0x03
 
-
 MAX_LOOP_DAY		= 100
 OFFLINE_PROTECT		= 19 * 60	#离线保护时间
 
-FDIR = {
-	"Linux"		: "/home/game/logsrv/data/",
-	"Windows"	: "E:\\SecureCRTDownload\\logsrv.data",
-}
 def GetFileDir():
+	FDIR = {
+		"Linux"		: "/home/game/logsrv/data/",
+		"Windows"	: "E:/SecureCRTDownload/logsrv/data/",
+	}
 	oper_sys = platform.system()
 	fdir = FDIR.get(oper_sys)
 	if fdir == None:
@@ -67,19 +66,6 @@ def GetLiveTimeData(tdm):
 		lst.sort(key = lambda v : v[2])		#根据seq排序（整数时间戳的精度不够）
 	return rdm
 
-def GetSecondString(tm, prec = 0):
-	_tms = [("秒", 60), ("分钟", 60), ("小时", 24), ("天", 9999)]
-	s = ""
-	for i, (u, n) in enumerate(_tms):
-		if tm < n or i >= prec:
-			v = tm % n
-			if v > 0:
-				s = "%d%s"%(v, u) + s
-		tm /= n
-		if tm == 0:
-			break
-	return s
-
 def PrintLiveTime(rdm, sample):
 	if sample:
 		lst = random.sample(rdm.keys())
@@ -121,17 +107,6 @@ def DoPrintLiveTime(rid, vlst):
 	else:
 		print rid, "数据不完整，需要补全才能统计", vlst
 
-def IsSameDay(tm, now):
-	tm -= (tm - time.timezone)%86400		#调整为当日0时
-	now -= (now - time.timezone)%86400		#调整为当日0时
-	return tm == now
-
-def GetDay(tm):
-	return tm - (tm - time.timezone)%86400
-
-def GetDayEnd(tm):
-	return tm - (tm - time.timezone)%86400 + 86400
-
 def UpdateLiveMap(stm, etm, dm):
 	for _ in xrange(MAX_LOOP_DAY):
 		if stm >= etm:
@@ -171,3 +146,30 @@ if __name__ == "__main__":
 	fdir = GetFileDir()
 	if fdir != None:
 		Parse(fdir)
+
+###########################################################
+#工具函数
+###########################################################
+def GetSecondString(tm, prec = 0):
+	_tms = [("秒", 60), ("分钟", 60), ("小时", 24), ("天", 9999)]
+	s = ""
+	for i, (u, n) in enumerate(_tms):
+		if tm < n or i >= prec:
+			v = tm % n
+			if v > 0:
+				s = "%d%s"%(v, u) + s
+		tm /= n
+		if tm == 0:
+			break
+	return s
+
+def IsSameDay(tm, now):
+	tm -= (tm - time.timezone) % 86400		#调整为当日0时
+	now -= (now - time.timezone) % 86400		#调整为当日0时
+	return tm == now
+
+def GetDay(tm):
+	return tm - (tm - time.timezone) % 86400
+
+def GetDayEnd(tm):
+	return tm - (tm - time.timezone) % 86400 + 86400

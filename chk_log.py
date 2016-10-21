@@ -88,7 +88,11 @@ def DoPrintLiveTime(rid, vlst):
 		
 		stm, slt, _ = vlst[i * 2]
 		etm, elt, _ = vlst[i * 2 + 1]
-		assert stm < etm and slt == 0 and elt == 1
+		if stm >= etm:
+			s += "在线时长不足离线保护时间，忽略不计"
+			print s
+			continue
+		assert slt == 0 and elt == 1
 		
 		stms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stm))
 		etms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(etm))

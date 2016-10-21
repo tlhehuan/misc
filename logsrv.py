@@ -12,6 +12,7 @@ TYPE_LOGIN		= 0x02
 TYPE_LOGOUT		= 0x03
 
 
+MAX_LOOP_DAY		= 100
 OFFLINE_PROTECT		= 19 * 60	#离线保护时间
 
 FDIR = {
@@ -131,11 +132,13 @@ def GetDayEnd(tm):
 	return tm - (tm - time.timezone)%86400 + 86400
 
 def UpdateLiveMap(stm, etm, dm):
-	for _ in xrange(100):
+	for _ in xrange(MAX_LOOP_DAY):
 		if stm >= etm:
 			break
 		dm[GetDay(stm)] = dm.get(GetDay(stm), 0) + (min(etm, GetDayEnd(stm)) - stm)
 		stm = GetDayEnd(stm)
+	else:
+		raise "总天数太长"
 	return dm
 
 def Parse(fdir):
@@ -149,14 +152,15 @@ def Parse(fdir):
 	
 	stm = min(dm["tm"] for lst in tdm.values() for dm in lst)
 	etm = max(dm["tm"] for lst in tdm.values() for dm in lst)
-	for _ in xrange(100):
+	for _ in xrange(MAX_LOOP_DAY):
 		if stm >= etm:
 			break
 		date = time.strftime("%Y-%m-%d", time.localtime(stm))
 		print date, NewRoleLog(tdm[TYPE_NEW_ROLE], GetDay(stm), GetDayEnd(stm))
 		print date, LoginLog(tdm[TYPE_LOGIN], GetDay(stm), GetDayEnd(stm))
 		stm = GetDayEnd(stm)
-	
+	else:
+		raise "总天数太长"
 	rdm = GetLiveTimeData(tdm)
 	PrintLogin(rdm, False)
 	return rdm	#便于人工登陆登出数据

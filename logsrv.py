@@ -6,6 +6,8 @@ import platform
 import time
 import random
 
+OFFLINE_PROTECT		= 19 * 60	#离线保护时间
+
 FDIR = {
 	"Linux"		: "/home/game/logsrv/data/",
 	"Windows"	: "E:\\SecureCRTDownload\\logsrv.data",
@@ -14,7 +16,7 @@ def GetFileDir():
 	oper_sys = platform.system()
 	fdir = FDIR.get(oper_sys)
 	if fdir == None:
-		print "未知操作系统"
+		print "未知操作系统: %s"%oper_sys
 		return None
 	return fdir
 
@@ -49,12 +51,11 @@ def NewRoleLog(lst, stm, etm):
 	return "新建角色日志行数: %d, 新角色ID数: %d"%(line_cnt, len(rid_set))
 
 def GetLiveTimeData(tdm):
-	protect = 19 * 60
 	rdm = {}
 	for dm in tdm[2]:
-		rdm.setdefault(dm["rid"], []).append((dm["tm"] - protect, 0, dm["log_seq"]))
+		rdm.setdefault(dm["rid"], []).append((dm["tm"] - OFFLINE_PROTECT, 0, dm["log_seq"]))
 	for dm in tdm[3]:
-		rdm.setdefault(dm["rid"], []).append((dm["tm"] - protect, 1, dm["log_seq"]))
+		rdm.setdefault(dm["rid"], []).append((dm["tm"] - OFFLINE_PROTECT, 1, dm["log_seq"]))
 	for rid, lst in rdm.iteritems():
 		lst.sort(key = lambda v : v[2])		#根据seq排序（整数时间戳的精度不够）
 	return rdm
@@ -62,12 +63,12 @@ def GetLiveTimeData(tdm):
 def GetSecondString(tm, prec = 0):
 	_tms = [("秒", 60), ("分钟", 60), ("小时", 24), ("天", 9999)]
 	s = ""
-	for i, t in enumerate(_tms):
-		if i >= prec or tm < t[1]:
-			v = tm % t[1]
+	for i, (u, n) in enumerate(_tms):
+		if tm < n or i >= prec:
+			v = tm % n
 			if v > 0:
-				s = "%d%s"%(v, t[0]) + s
-		tm /= t[1]
+				s = "%d%s"%(v, u) + s
+		tm /= n
 		if tm == 0:
 			break
 	return s
@@ -96,7 +97,7 @@ def _PrintLogin(rid, vlst):
 				if IN[1] == 0 and OUT[1] == 1:
 					stm, etm = IN[0], OUT[0]
 					livetm = etm - stm
-					s += "%d, 第%03d次游戏: 登出时间 - (登陆时间-19分钟) = %d"%(rid, i + 1, livetm)
+					s += "%d, 第%03d次游戏: 登出时间 - 登陆时间( - %s) = %d"%(rid, i + 1, GetSecondString(OFFLINE_PROTECT), livetm)
 					if livetm > 0:
 						s += "(%s)"%GetSecondString(livetm)
 						ttm += livetm
@@ -135,7 +136,7 @@ def Parse(fdir):
 	tdm = {}
 	n = 0
 	for root, dirs, files in os.walk(fdir):
-		for fname in files:
+		for fname in sorted(files):
 			fp = os.path.join(root, fname)
 			n += ReadFile(fp, tdm)
 	print "所有日志行数: %d"%n

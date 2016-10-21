@@ -85,10 +85,11 @@ def PrintLiveTime(rdm, sample):
 		lst = random.sample(rdm.keys())
 	else:
 		lst = rdm.keys()
+	
 	for rid in sorted(lst):
-		_PrintLogin(rid, rdm[rid])
+		DoPrintLiveTime(rid, rdm[rid])
 
-def _PrintLogin(rid, vlst):
+def DoPrintLiveTime(rid, vlst):
 	print "-----------------------------------------"
 	n = len(vlst) / 2
 	if n > 0:

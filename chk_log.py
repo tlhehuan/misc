@@ -124,8 +124,8 @@ def AddLiveMap(stm, etm, dlm):
 		if stm >= etm:
 			break
 		
-		dlm[GetDay(stm)] = dlm.get(GetDay(stm), 0) + (min(etm, GetDayEnd(stm)) - stm)
-		stm = GetDayEnd(stm)
+		dlm[GetToday(stm)] = dlm.get(GetToday(stm), 0) + (min(etm, GetNextDay(stm)) - stm)
+		stm = GetNextDay(stm)
 	else:
 		raise "总天数太长"
 	
@@ -150,9 +150,9 @@ def Check_Main(fdir):
 			break
 		
 		date = time.strftime("%Y-%m-%d", time.localtime(stm))
-		print date, NewRoleLog(tdm[TYPE_NEW_ROLE], GetDay(stm), GetDayEnd(stm))
-		print date, LoginLog(tdm[TYPE_LOGIN], GetDay(stm), GetDayEnd(stm))
-		stm = GetDayEnd(stm)
+		print date, NewRoleLog(tdm[TYPE_NEW_ROLE], GetToday(stm), GetNextDay(stm))
+		print date, LoginLog(tdm[TYPE_LOGIN], GetToday(stm), GetNextDay(stm))
+		stm = GetNextDay(stm)
 	else:
 		raise "总天数太长"
 	
@@ -165,6 +165,17 @@ def Check_Main(fdir):
 ###########################################################
 #工具函数
 ###########################################################
+def GetToday(tm):
+	return tm - (tm - time.timezone) % 86400
+
+def GetNextDay(tm):
+	return tm - (tm - time.timezone) % 86400 + 86400
+
+def IsSameDay(x, y):
+	x -= (x - time.timezone) % 86400		#调整为当日0时
+	y -= (y - time.timezone) % 86400		#调整为当日0时
+	return x == y
+
 def FormatTimeLength(tm):
 	FMT = [("秒", 60), ("分钟", 60), ("小时", 24), ("天", 9999)]
 	s = ""
@@ -176,17 +187,6 @@ def FormatTimeLength(tm):
 		if tm == 0:
 			break
 	return s
-
-def IsSameDay(tm, now):
-	tm -= (tm - time.timezone) % 86400		#调整为当日0时
-	now -= (now - time.timezone) % 86400		#调整为当日0时
-	return tm == now
-
-def GetDay(tm):
-	return tm - (tm - time.timezone) % 86400
-
-def GetDayEnd(tm):
-	return tm - (tm - time.timezone) % 86400 + 86400
 
 if __name__ == "__main__":
 	fdir = GetFileDir()

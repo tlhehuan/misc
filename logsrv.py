@@ -80,7 +80,7 @@ def GetSecondString(tm, prec = 0):
 			break
 	return s
 
-def PrintLogin(rdm, sample):
+def PrintLiveTime(rdm, sample):
 	if sample:
 		lst = random.sample(rdm.keys())
 	else:
@@ -161,8 +161,9 @@ def Parse(fdir):
 		stm = GetDayEnd(stm)
 	else:
 		raise "总天数太长"
+	
 	rdm = GetLiveTimeData(tdm)
-	PrintLogin(rdm, False)
+	PrintLiveTime(rdm, False)
 	return rdm	#便于人工登陆登出数据
 
 if __name__ == "__main__":

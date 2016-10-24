@@ -28,15 +28,17 @@ def GetFileDir():
 		return None
 	return fdir
 
-def ReadFile(fp, tdm):
+def ReadFile(fp, dm_lst):
 	n = 0
+	ts = set([TYPE_NEW_ROLE, TYPE_LOGIN, TYPE_LOGOUT])
+	
 	with open(fp) as f:
 		for line in f:
-			dm = json.loads(line[21:-1])
-			seq = line[:20]
-			dm["log_seq"] = seq
-			tdm.setdefault(dm["type"],[]).append(dm)
 			n += 1
+			dm = json.loads(line[21:-1])
+			if dm["type"] in ts:
+				dm_lst.append(dm)
+	
 	print "读取到%d行日志 --From %s"%(n, fp)
 	return n
 
@@ -56,28 +58,9 @@ def NewRoleLog(lst, stm, etm):
 		if stm <= dm["tm"] < etm:
 			n += 1
 			rid_set.add(dm["rid"])
-	return "新建角色日志行数: %d, 新角色ID数: %d"%(n, len(rid_set))
+	return "新角色日志行数: %d, 新角色ID数: %d"%(n, len(rid_set))
 
-def GetLiveData(tdm):
-	rdm = {}
-	for dm in tdm[TYPE_LOGIN]:
-		rdm.setdefault(dm["rid"], []).append((dm["tm"], 0, dm["log_seq"]))
-	for dm in tdm[TYPE_LOGOUT]:
-		rdm.setdefault(dm["rid"], []).append((dm["tm"] - OFFLINE_PROTECT, 1, dm["log_seq"]))
-	for rid, lst in rdm.iteritems():
-		lst.sort(key = lambda v : v[2])		#根据seq排序（整数时间戳的精度不够）
-	return rdm
-
-def PrintLiveTime(rdm, sample):
-	if sample:
-		lst = random.sample(rdm.keys())
-	else:
-		lst = rdm.keys()
-	
-	for rid in sorted(lst):
-		DoPrintLiveTime(rid, rdm[rid])
-
-def DoPrintLiveTime(rid, vlst):
+def PrintLiveTime(rid, vlst):
 	dlm = {}	#日在线时长
 	total = 0	#总在线时长
 	
@@ -86,10 +69,12 @@ def DoPrintLiveTime(rid, vlst):
 	for i in xrange(n):
 		s = "%d 第%03d次游戏: "%(rid, i + 1)
 		
-		stm, slt, _ = vlst[i * 2]
-		etm, elt, _ = vlst[i * 2 + 1]
-		assert slt == 0 and elt == 1
+		sdm = vlst[i * 2]
+		edm = vlst[i * 2 + 1]
+		assert sdm["type"] == TYPE_LOGIN and edm["type"] == TYPE_LOGOUT
 		
+		stm = sdm["tm"]
+		etm = edm["tm"] - OFFLINE_PROTECT	#扣除离线保护时间
 		stms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stm))
 		etms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(etm))
 		if stm >= etm:
@@ -106,7 +91,8 @@ def DoPrintLiveTime(rid, vlst):
 		print s
 	
 	if rem > 0:
-		stm, slt, _ = vlst[-1]
+		sdm = vlst[-1]
+		stm = sdm["tm"]
 		s = "%d 第%03d次游戏: "%(rid, n + 1)
 		stms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stm))
 		s += "%s --> (尚未登出)"%stms
@@ -132,33 +118,38 @@ def AddLiveMap(stm, etm, dlm):
 	return dlm
 
 def Check_Main(fdir):
-	tdm = {}	#日志数据
-	
+	dm_lst = []	#原始数据
 	#读取
 	n = 0
 	for root, dirs, files in os.walk(fdir):
 		for fname in sorted(files):
 			fp = os.path.join(root, fname)
-			n += ReadFile(fp, tdm)
-	print "所有日志行数: %d"%n
+			n += ReadFile(fp, dm_lst)
+	print "所有日志行数: %d\n待分析行数: %d"%(n, len(dm_lst))
 	
 	#计算每天的新角色数量、登陆数量
-	stm = min(dm["tm"] for lst in tdm.values() for dm in lst)
-	etm = max(dm["tm"] for lst in tdm.values() for dm in lst)
+	stm = min(dm["tm"] for dm in dm_lst)
+	etm = max(dm["tm"] for dm in dm_lst)
+	new_lst = [dm for dm in dm_lst if dm["type"] == TYPE_NEW_ROLE]
+	log_lst = [dm for dm in dm_lst if dm["type"] == TYPE_LOGIN]
 	for _ in xrange(MAX_LOOP_DAY):
 		if stm >= etm:
 			break
 		
 		date = time.strftime("%Y-%m-%d", time.localtime(stm))
-		print date, NewRoleLog(tdm[TYPE_NEW_ROLE], GetToday(stm), GetNextDay(stm))
-		print date, LoginLog(tdm[TYPE_LOGIN], GetToday(stm), GetNextDay(stm))
+		print date, NewRoleLog(new_lst, GetToday(stm), GetNextDay(stm))
+		print date, LoginLog(log_lst, GetToday(stm), GetNextDay(stm))
 		stm = GetNextDay(stm)
 	else:
 		raise "总天数太长"
 	
 	#计算在线时间
-	rdm = GetLiveData(tdm)
-	PrintLiveTime(rdm, False)
+	rdm = {}
+	for dm in dm_lst:
+		if dm["type"] in (TYPE_LOGIN, TYPE_LOGOUT):
+			rdm.setdefault(dm["rid"], []).append(dm)
+	for rid in sorted(rdm.keys()):			#按角色ID顺序打印
+		PrintLiveTime(rid, rdm[rid])
 	return rdm
 
 

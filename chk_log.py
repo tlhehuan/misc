@@ -77,14 +77,14 @@ def PrintLiveTime(rid, vlst):
 		etm = edm["tm"] - OFFLINE_PROTECT	#扣除离线保护时间
 		stms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(stm))
 		etms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(etm))
-		if stm >= etm:
-			s += "在线时长不足离线保护时间，忽略不计(离线时间 %s)"% etms
-			print s
-			continue
 		s += "%s --> %s, "%(stms, etms)
 		
 		livetm = etm - stm
 		s += "登出时间 - 登陆时间 = %d(%s)"%(livetm, FormatTimeLength(livetm))
+		if livetm < 0:
+			s += "\t不足离线保护时间，忽略不计"
+			print s
+			continue
 		
 		AddLiveMap(stm, etm, dlm)
 		total += livetm
@@ -167,15 +167,21 @@ def IsSameDay(x, y):
 
 def FormatTimeLength(tm):
 	FMT = [("秒", 60), ("分钟", 60), ("小时", 24), ("天", 9999)]
+	
+	if tm < 0:
+		ps = "-"
+		tm = -tm
+	else:
+		ps = ""
+	
 	s = ""
 	for i, (u, n) in enumerate(FMT):
-		v = tm % n
-		if v > 0:
-			s = "%d%s"%(v, u) + s
-		tm /= n
+		tm, v = divmod(tm, n)
+		s = "%d%s"%(v, u) + s
 		if tm == 0:
 			break
-	return s
+	
+	return ps + s
 
 if __name__ == "__main__":
 	fdir = GetFileDir()
